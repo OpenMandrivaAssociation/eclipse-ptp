@@ -1,8 +1,12 @@
+%{?_javapackages_macros:%_javapackages_macros}
+
 %global eclipse_base            %{_datadir}/eclipse
 %global cdtreq                  1:8.1.0
 %global pdereq                  1:4.2.0
-%global ptp_build_id            201506251100
-%global ptp_git_tag             PTP_9_0_0
+%global rsereq                  3.5
+%global ptp_build_id            201502031415
+%global ptp_git_tag             9bb29a9a48849f848111613a27a5dff793123e83
+%global _duplicate_files_terminate_build 0
 
 %ifarch %{ix86}
     %define eclipse_arch x86
@@ -19,21 +23,28 @@
 
 Summary:        Eclipse Parallel Tools Platform
 Name:           eclipse-ptp
-Version:        9.0.0
-Release:        1%{?dist}
+Version:        8.1.1
+Release:        2.1
 License:        EPL
-Group:          Development/Tools
+Group:          Development/Java
 URL:            http://www.eclipse.org/ptp
 
 # The following tarballs were downloaded from the git repositories
-Source0:        http://git.eclipse.org/c/ptp/org.eclipse.ptp.git/snapshot/%{ptp_git_tag}.tar.xz
+Source0:        http://git.eclipse.org/c/ptp/org.eclipse.ptp.git/snapshot/org.eclipse.ptp-%{ptp_git_tag}.tar.bz2
+# This is made with makesource.sh
+#Source0:        org.eclipse.ptp-%{ptp_git_tag}.tar.xz
+Source2:        makesource.sh
 # To help generate the needed Requires
 Source3:        finddeps.sh
 
+# Remove rdt.remotetools from ptp feature
+Patch0:         eclipse-ptp-noremote.patch
 # Remove extra environments from pom.xml
-Patch0:         eclipse-ptp-tycho-build.patch
+Patch1:         eclipse-ptp-tycho-build.patch
 # Add <repository> for tycho-eclipserun-plugin
-Patch1:         eclipse-ptp-repository.patch
+Patch2:         eclipse-ptp-repository.patch
+# Support new jgit - upstream commit 07338503d501cf94f8b7d50398af3c811e748ff9
+Patch3:         eclipse-ptp-jgit.patch
 
 # Remove some unneeded dependencies
 BuildRequires:  java-devel >= 1.5.0
@@ -46,13 +57,14 @@ BuildRequires:  eclipse-jgit
 BuildRequires:  eclipse-pde >= %{pdereq}
 BuildRequires:  eclipse-photran-intel
 BuildRequires:  eclipse-photran-xlf
+BuildRequires:  eclipse-rse >= %{rsereq}
 BuildRequires:  eclipse-remote
-BuildRequires:  eclipse-tm-terminal
 BuildRequires:  lpg-java-compat = 1.1.0
 
 Requires:       eclipse-cdt >= %{cdtreq}
 Requires:       eclipse-remote
 # Pulled in by rdt.remotetools being in ptp main
+Requires:       %{name}-rdt = %{version}-%{release}
 Provides:       %{name}-cdt-compilers = %{version}-%{release}
 Obsoletes:      %{name}-cdt-compilers < %{version}-%{release}
 Provides:       %{name}-etfw-ppw = %{version}-%{release}
@@ -72,12 +84,6 @@ Obsoletes:      %{name}-rdt-sync < %{version}-%{release}
 Provides:       %{name}-rdt-xlc-sdk = %{version}-%{release}
 Obsoletes:      %{name}-rdt-xlc-sdk < %{version}-%{release}
 
-#Obsolete components no longer available in 9.0
-Obsoletes:      %{name}-rdt < %{version}-%{release}
-Obsoletes:      %{name}-rdt-xlc < %{version}-%{release}
-Obsoletes:      %{name}-remote-rse < %{version}-%{release}
-
-
 %description
 The aim of the parallel tools platform project is to produce an open-source
 industry-strength platform that provides a highly integrated environment
@@ -96,7 +102,7 @@ This package contains the main PTP run-time features.
 
 %package        master
 Summary:        Complete PTP package
-Group:          Development/Libraries
+Group:          Development/Java
 Requires:       eclipse-cdt >= %{cdtreq}
 Requires:       %{name} = %{version}-%{release}
 
@@ -108,6 +114,9 @@ Requires:       %{name}-gem = %{version}-%{release}
 #Requires:       %{name}-gig = %{version}-%{release}
 Requires:       %{name}-pldt-fortran = %{version}-%{release}
 Requires:       %{name}-pldt-upc = %{version}-%{release}
+Requires:       %{name}-rdt = %{version}-%{release}
+Requires:       %{name}-rdt-xlc = %{version}-%{release}
+Requires:       %{name}-remote-rse = %{version}-%{release}
 Requires:       %{name}-rm-contrib = %{version}-%{release}
 Requires:       %{name}-sci = %{version}-%{release}
 Requires:       %{name}-sdk = %{version}-%{release}
@@ -122,7 +131,7 @@ The package will bring in all of the PTP components.
 
 %package        core-source
 Summary:        PTP Core Components Source
-Group:          Development/Libraries
+Group:          Development/Java
 BuildArch:      noarch
 Requires:       %{name} = %{version}-%{release}
 
@@ -132,7 +141,7 @@ Parallel Tools Platform core components source code.
 
 %package        etfw-tau
 Summary:        PTP External Tools Framework TAU Support
-Group:          Development/Libraries
+Group:          Development/Java
 BuildArch:      noarch
 Requires:       %{name} = %{version}-%{release}
 
@@ -143,7 +152,7 @@ to the TAU performance analysis system.
 
 %package        etfw-tau-fortran
 Summary:        PTP External Tools Framework: TAU Fortran Enabler
-Group:          Development/Libraries
+Group:          Development/Java
 BuildArch:      noarch
 Requires:       %{name}-etfw-tau = %{version}-%{release}
 Requires:       eclipse-photran
@@ -155,7 +164,7 @@ Photran project.
 
 %package        fortran
 Summary:        PTP Fortran Support
-Group:          Development/Libraries
+Group:          Development/Java
 BuildArch:      noarch
 Requires:       %{name} = %{version}-%{release}
 Requires:       %{name}-etfw-tau-fortran = %{version}-%{release}
@@ -171,7 +180,7 @@ Adds Fortran support to PTP.
 
 %package        gem
 Summary:        PTP Graphical Explorer of MPI Programs (GEM)
-Group:          Development/Libraries
+Group:          Development/Java
 BuildArch:      noarch
 Requires:       %{name} = %{version}-%{release}
 
@@ -194,7 +203,7 @@ guarantees to discover and explore all non-deterministic matches at run-time.
 %if 0
 %package        gig
 Summary:        PTP Graphical Inquisitor of GPU Programs (GIG)
-Group:          Development/Libraries
+Group:          Development/Java
 BuildArch:      noarch
 Requires:       %{name} = %{version}-%{release}
 
@@ -210,7 +219,7 @@ http://cs.utah.edu/fv/gklee
 
 %package        pldt-fortran
 Summary:        PTP Parallel Language Development Tools Fortran Support
-Group:          Development/Libraries
+Group:          Development/Java
 BuildArch:      noarch
 Requires:       eclipse-cdt-parsers >= %{cdtreq}
 Requires:       %{name} = %{version}-%{release}
@@ -222,7 +231,7 @@ Adds a range of static analysis and programming assistance tools for Fortran.
 
 %package        pldt-upc
 Summary:        PTP Parallel Language Development Tools UPC Support
-Group:          Development/Libraries
+Group:          Development/Java
 BuildArch:      noarch
 Requires:       eclipse-cdt-parsers >= %{cdtreq}
 Requires:       %{name} = %{version}-%{release}
@@ -233,9 +242,21 @@ Note: this is separated from the rest of PLDT since it requires the UPC
 feature of CDT, which is sometimes not installed with CDT.
 
 
+%package        rdt
+Summary:        PTP Remote Development Tools
+Group:          Development/Java
+BuildArch:      noarch
+Requires:       %{name} = %{version}-%{release}
+Requires:       eclipse-jgit
+Requires:       eclipse-rse >= %{rsereq}
+
+%description    rdt
+PTP components for supporting Remote Development Tools.
+
+
 %package        rdt-sync-fortran
 Summary:        PTP Fortran Synchronization Support
-Group:          Development/Libraries
+Group:          Development/Java
 BuildArch:      noarch
 Requires:       %{name}-rdt-sync = %{version}-%{release}
 
@@ -243,9 +264,20 @@ Requires:       %{name}-rdt-sync = %{version}-%{release}
 Adds the ability to remotely synchronize Fortran projects.
 
 
+%package        rdt-xlc
+Summary:        PTP Remote Development Tools XL C/C++ Compiler Support
+Group:          Development/Java
+BuildArch:      noarch
+Requires:       %{name}-rdt = %{version}-%{release}
+Requires:       eclipse-cdt-parsers >= %{cdtreq}
+
+%description    rdt-xlc
+Remote support for the IBM XL C/C++ compilers.
+
+
 %package        rm-contrib
 Summary:        PTP Contributed Resource Manager Definitions
-Group:          Development/Libraries
+Group:          Development/Java
 BuildArch:      noarch
 Requires:       %{name} = %{version}-%{release}
 
@@ -255,7 +287,7 @@ Adds resource managers for a number of different systems.
 
 %package        sci
 Summary:        PTP Scalable Communication Infrastructure (SCI)
-Group:          Development/Libraries
+Group:          Development/Java
 BuildArch:      noarch
 
 %description    sci
@@ -265,7 +297,7 @@ Infrastructure (SCI).
 
 %package        sdk
 Summary:        Parallel Tools Platform SDK 
-Group:          Development/Libraries
+Group:          Development/Java
 BuildArch:      noarch
 Requires:       %{name}-core-source = %{version}-%{release}
 
@@ -276,7 +308,7 @@ code and developer documentation.
 
 %package        sdm
 Summary:        PTP Scalable Debug Manager (SDM)
-Group:          Development/Libraries
+Group:          Development/Java
 Requires:       %{name} = %{version}-%{release}
 
 %description    sdm
@@ -288,18 +320,42 @@ in the sdm plugin and at %{_libdir}/ptp/sdm.  If the target system is of
 a different archicture, you will need to build and install it by hand.
 
 
-%prep
-%setup -q -n %{ptp_git_tag}
+%package        remote-rse
+Summary:        PTP RSE Enabler
+Group:          Development/Java
+BuildArch:      noarch
+Requires:       %{name} = %{version}-%{release}
 
-%patch0 -p2 -b .tycho-build
-%patch1 -p1 -b .repository
+%description    remote-rse
+Provides support for remote services using RSE.
+
+
+%prep
+%setup -q -n org.eclipse.ptp-%{ptp_git_tag}
+
+%patch0 -p2 -b .noremote
+%patch1 -p2 -b .tycho-build
+%patch2 -p1 -b .repository
+#patch3 -p1 -b .jgit
 sed -i -e 's/<arch>x86<\/arch>/<arch>%{eclipse_arch}<\/arch>/g' pom.xml
 
 # Remove dep on ant-trax
+%pom_remove_dep ant:ant-trax rdt/org.eclipse.ptp.rdt.core.remotejars
 %pom_remove_dep ant:ant-trax rms/org.eclipse.ptp.rm.lml.da.server
 
 # Remove bundled binaries
 rm -r releng/org.eclipse.ptp.linux/os/linux
+# Remotejars requires a bunch of downloaded prebuilt stuff
+%pom_disable_module rdt/org.eclipse.ptp.rdt.core.remotejars
+%pom_disable_module releng/org.eclipse.ptp.rdt.remotejars-feature
+# This depends on remotejars
+%pom_disable_module rdt/org.eclipse.ptp.rdt.server.dstore
+# This depends on rdt.server.dstor
+%pom_disable_module releng/org.eclipse.ptp.rdt.remotetools-feature
+
+# Remove unavailable items from the repo build
+%pom_xpath_remove "feature[@id='org.eclipse.remote.source']" releng/org.eclipse.ptp.repo/category.xml
+
 
 %build
 export JAVA_HOME=%{java_home}
@@ -314,7 +370,7 @@ mkdir -p releng/org.eclipse.ptp.linux/os/linux/%{_arch}
 cp -p debug/org.eclipse.ptp.debug.sdm/bin/sdm releng/org.eclipse.ptp.linux/os/linux/%{_arch}/sdm
 
 # Build the project
-%mvn_build -j -- -DforceContextQualifier=%{ptp_build_id}
+xmvn -o clean verify -DforceContextQualifier=%{ptp_build_id}
 
 
 %install
@@ -347,14 +403,15 @@ do
 done
 cp -u releng/org.eclipse.ptp.repo/target/repository/plugins/*.jar \
    %{buildroot}%{eclipse_base}/dropins/ptp/eclipse/plugins/
-
 # Remove external plugins
-rm %{buildroot}%{eclipse_base}/dropins/ptp/eclipse/plugins/org.eclipse.photran*
+rm %{buildroot}%{eclipse_base}/dropins/ptp/eclipse/plugins/org.eclipse.{photran,remote}*
 
 # Remove disabled modules from filelist
 sed -i -e '\,plugins/org.eclipse.ptp.remote.remotetools_,d' \
        -e '\,plugins/org.eclipse.ptp.remote_,d' \
        -e '\,plugins/org.eclipse.ptp.remotetools_,d' files.*
+
+sed -i -e '\,plugins/org.eclipse.ptp.core.source_,d' files.org.eclipse.ptp.sdk_*
 
 # Install sdm binary so debuginfo is created
 mkdir -p %{buildroot}%{_libdir}/ptp
@@ -407,9 +464,22 @@ cp -p debug/org.eclipse.ptp.debug.sdm/bin/sdm %{buildroot}%{_libdir}/ptp/
 %doc releng/org.eclipse.ptp-feature/epl-v10.html
 %{eclipse_base}/dropins/ptp/eclipse/features/org.eclipse.ptp.pldt.upc_*
 
+%files rdt -f files.org.eclipse.ptp.rdt_%{version} -f files.org.eclipse.ptp.rdt.editor_%{version}
+%doc releng/org.eclipse.ptp-feature/epl-v10.html
+%{eclipse_base}/dropins/ptp/eclipse/features/org.eclipse.ptp.rdt_*
+%{eclipse_base}/dropins/ptp/eclipse/features/org.eclipse.ptp.rdt.editor_*
+
 %files rdt-sync-fortran -f files.org.eclipse.ptp.rdt.sync.fortran_%{version}
 %doc releng/org.eclipse.ptp-feature/epl-v10.html
 %{eclipse_base}/dropins/ptp/eclipse/features/org.eclipse.ptp.rdt.sync.fortran_*
+
+%files rdt-xlc -f files.org.eclipse.ptp.rdt.xlc_%{version}
+%doc releng/org.eclipse.ptp-feature/epl-v10.html
+%{eclipse_base}/dropins/ptp/eclipse/features/org.eclipse.ptp.rdt.xlc_*
+
+%files remote-rse -f files.org.eclipse.ptp.remote.rse_%{version}
+%doc releng/org.eclipse.ptp-feature/epl-v10.html
+%{eclipse_base}/dropins/ptp/eclipse/features/org.eclipse.ptp.remote.rse_*
 
 %files rm-contrib -f files.org.eclipse.ptp.rm.jaxb.contrib_%{version}
 %doc releng/org.eclipse.ptp-feature/epl-v10.html
@@ -430,22 +500,6 @@ cp -p debug/org.eclipse.ptp.debug.sdm/bin/sdm %{buildroot}%{_libdir}/ptp/
 
 
 %changelog
-* Thu Jun 25 2015 Alexander Kurtakov <akurtako@redhat.com> 9.0.0-1
-- Update to 9.0.0 final.
-
-* Wed Jun 17 2015 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 9.0.0-0.4.gitf349d01
-- Rebuilt for https://fedoraproject.org/wiki/Fedora_23_Mass_Rebuild
-
-* Fri Jun 5 2015 Alexander Kurtakov <akurtako@redhat.com> 9.0.0-0.3.gitf349d01
-- Restore build_id to not make noarch packages have different content.
-
-* Thu Jun 4 2015 Alexander Kurtakov <akurtako@redhat.com> 9.0.0-0.2.gitf349d01
-- Drop old build_id and let jgit generate one.
-- Build with mvn_build.
-
-* Wed Jun 3 2015 Alexander Kurtakov <akurtako@redhat.com> 9.0.0-0.1.gitf349d01
-- Update to 9.0 prerelase to allow compilation against Mars.
-
 * Wed Mar 25 2015 Orion Poplawski <orion@cora.nwra.com> 8.1.1-2
 - Update upstream source to fix compilation against CDT
 - Use upstream patch for jgit 3.7.0 compatibility

@@ -1,0 +1,15 @@
+diff -up eclipse-ptp-7.0.0/org.eclipse.ptp-3ef93135125e9616e863d879fe188f338f01d9a7/releng/org.eclipse.ptp-feature/feature.xml.noremote eclipse-ptp-7.0.0/org.eclipse.ptp-3ef93135125e9616e863d879fe188f338f01d9a7/releng/org.eclipse.ptp-feature/feature.xml
+--- eclipse-ptp-7.0.0/org.eclipse.ptp-3ef93135125e9616e863d879fe188f338f01d9a7/releng/org.eclipse.ptp-feature/feature.xml.noremote	2013-04-08 14:06:09.000000000 -0600
++++ eclipse-ptp-7.0.0/org.eclipse.ptp-3ef93135125e9616e863d879fe188f338f01d9a7/releng/org.eclipse.ptp-feature/feature.xml	2013-04-09 10:44:41.015887777 -0600
+@@ -66,10 +66,6 @@
+          version="0.0.0"/>
+ 
+    <includes
+-         id="org.eclipse.ptp.rdt.remotetools"
+-         version="0.0.0"/>
+-
+-   <includes
+          id="org.eclipse.ptp.rdt.sync"
+          version="0.0.0"/>
+ 
+diff -up eclipse-ptp-7.0.0/org.eclipse.ptp-3ef93135125e9616e863d879fe188f338f01d9a7/releng/org.eclipse.ptp.repo/category.xml.noremote eclipse-ptp-7.0.0/org.eclipse.ptp-3ef93135125e9616e863d879fe188f338f01d9a7/releng/org.eclipse.ptp.repo/category.xml
