@@ -4,27 +4,26 @@
 %global cdtreq                  1:8.1.0
 %global pdereq                  1:4.2.0
 %global rsereq                  3.5
-%global ptp_build_id            201502031415
-%global ptp_git_tag             9bb29a9a48849f848111613a27a5dff793123e83
-%global _duplicate_files_terminate_build 0
+%global pdebuild                %{_bindir}/eclipse-pdebuild
+%global ptp_build_id            201402121320
+%global ptp_git_tag             PTP_7_0_4
+#global ptp_git_tag             7a7225fc8470b8ec4bc614ff9110d8045fa20a52
 
+# All arches line up except i386 -> x86
 %ifarch %{ix86}
-    %define eclipse_arch x86
-%endif
+%define eclipse_arch    x86
+%else
 %ifarch %{arm}
-    %define eclipse_arch arm
+%define eclipse_arch    arm
+%else
+%define eclipse_arch   %{_arch}
 %endif
-%ifarch ppc64 ppc64p7
-    %define eclipse_arch ppc64
-%endif
-%ifarch s390 s390x ppc x86_64 aarch64 ppc64le
-    %define eclipse_arch %{_arch}
 %endif
 
 Summary:        Eclipse Parallel Tools Platform
 Name:           eclipse-ptp
-Version:        8.1.1
-Release:        2.1
+Version:        7.0.4
+Release:        1.1
 License:        EPL
 Group:          Development/Java
 URL:            http://www.eclipse.org/ptp
@@ -37,14 +36,14 @@ Source2:        makesource.sh
 # To help generate the needed Requires
 Source3:        finddeps.sh
 
+# Remove dependency specifications on ant-trax
+Patch0:         eclipse-ptp-notrax.patch
 # Remove rdt.remotetools from ptp feature
-Patch0:         eclipse-ptp-noremote.patch
+Patch1:         eclipse-ptp-noremote.patch
 # Remove extra environments from pom.xml
-Patch1:         eclipse-ptp-tycho-build.patch
+Patch3:         eclipse-ptp-tycho-build.patch
 # Add <repository> for tycho-eclipserun-plugin
-Patch2:         eclipse-ptp-repository.patch
-# Support new jgit - upstream commit 07338503d501cf94f8b7d50398af3c811e748ff9
-Patch3:         eclipse-ptp-jgit.patch
+Patch5:         eclipse-ptp-repository.patch
 
 # Remove some unneeded dependencies
 BuildRequires:  java-devel >= 1.5.0
@@ -52,17 +51,16 @@ BuildRequires:  maven-local
 # Need tycho-extras for core/org.eclipse.ptp.doc.isv
 BuildRequires:  tycho-extras
 BuildRequires:  eclipse-cdt-parsers >= %{cdtreq}
-BuildRequires:  eclipse-license
+#BuildRequires: eclipse-cdt-tests
+# >= 1:6.0.2
 BuildRequires:  eclipse-jgit
 BuildRequires:  eclipse-pde >= %{pdereq}
 BuildRequires:  eclipse-photran-intel
 BuildRequires:  eclipse-photran-xlf
 BuildRequires:  eclipse-rse >= %{rsereq}
-BuildRequires:  eclipse-remote
 BuildRequires:  lpg-java-compat = 1.1.0
 
 Requires:       eclipse-cdt >= %{cdtreq}
-Requires:       eclipse-remote
 # Pulled in by rdt.remotetools being in ptp main
 Requires:       %{name}-rdt = %{version}-%{release}
 Provides:       %{name}-cdt-compilers = %{version}-%{release}
@@ -332,17 +330,14 @@ Provides support for remote services using RSE.
 
 %prep
 %setup -q -n org.eclipse.ptp-%{ptp_git_tag}
-
-%patch0 -p2 -b .noremote
-%patch1 -p2 -b .tycho-build
-%patch2 -p1 -b .repository
-#patch3 -p1 -b .jgit
+# Fix tycho version
+tychover=$(sed -ne '/<version>/{s/.*>\(.*\)<.*/\1/;p;q}' < /usr/share/maven-fragments/tycho)
+sed -i -e "/tycho-version/s/>[0-9].*</>${tychover}</" pom.xml
+%patch0 -p1 -b .notrax
+%patch1 -p2 -b .noremote
+%patch3 -p2 -b .tycho-build
+%patch5 -p1 -b .repository
 sed -i -e 's/<arch>x86<\/arch>/<arch>%{eclipse_arch}<\/arch>/g' pom.xml
-
-# Remove dep on ant-trax
-%pom_remove_dep ant:ant-trax rdt/org.eclipse.ptp.rdt.core.remotejars
-%pom_remove_dep ant:ant-trax rms/org.eclipse.ptp.rm.lml.da.server
-
 # Remove bundled binaries
 rm -r releng/org.eclipse.ptp.linux/os/linux
 # Remotejars requires a bunch of downloaded prebuilt stuff
@@ -352,9 +347,6 @@ rm -r releng/org.eclipse.ptp.linux/os/linux
 %pom_disable_module rdt/org.eclipse.ptp.rdt.server.dstore
 # This depends on rdt.server.dstor
 %pom_disable_module releng/org.eclipse.ptp.rdt.remotetools-feature
-
-# Remove unavailable items from the repo build
-%pom_xpath_remove "feature[@id='org.eclipse.remote.source']" releng/org.eclipse.ptp.repo/category.xml
 
 
 %build
@@ -368,9 +360,8 @@ sh BUILD
 popd
 mkdir -p releng/org.eclipse.ptp.linux/os/linux/%{_arch}
 cp -p debug/org.eclipse.ptp.debug.sdm/bin/sdm releng/org.eclipse.ptp.linux/os/linux/%{_arch}/sdm
-
 # Build the project
-xmvn -o clean verify -DforceContextQualifier=%{ptp_build_id}
+mvn-rpmbuild -DforceContextQualifier=%{ptp_build_id} install
 
 
 %install
@@ -380,162 +371,124 @@ mkdir -p %{buildroot}%{eclipse_base}/dropins/ptp/eclipse/{features,plugins}
 for jar in releng/org.eclipse.ptp.repo/target/repository/features/*.jar
 do
   name=$(basename $jar .jar)
-  # Skip external components
+  # Skip photran components
   [ ${name/org.eclipse.photran/} != $name ] && continue
   [ ${name/org.eclipse.rephraserengine/} != $name ] && continue
-  [ ${name/org.eclipse.remote/} != $name ] && continue
   unzip -u -d %{buildroot}%{eclipse_base}/dropins/ptp/eclipse/features/$name $jar
-  files="files.${name%.*}"
-  if [[ $name == org.eclipse.ptp_%{version}.* ]]
+  if [ $name == org.eclipse.ptp_%{version}.%{ptp_build_id} ]
   then
     # Group the core features
-    sed -ne '/id=/s#.*"\(.*\)"#%{eclipse_base}/dropins/ptp/eclipse/features/\1_*#gp' %{buildroot}%{eclipse_base}/dropins/ptp/eclipse/features/$name/feature.xml | tail -n +2 > $files
+    sed -ne '/id=/s#.*"\(.*\)"#%{eclipse_base}/dropins/ptp/eclipse/features/\1_*#gp' %{buildroot}%{eclipse_base}/dropins/ptp/eclipse/features/$name/feature.xml | tail -n +2 > files.$name
     # Add the plugins for those features
     sed -ne '/id=/s#.*"\(.*\)"#\1#gp' %{buildroot}%{eclipse_base}/dropins/ptp/eclipse/features/$name/feature.xml | tail -n +2 | while read f
     do
       [ $f == org.eclipse.ptp ] && continue
-      sed -ne '/id=/s#.*"\(.*\)"#%{eclipse_base}/dropins/ptp/eclipse/plugins/\1_*.jar#gp' %{buildroot}%{eclipse_base}/dropins/ptp/eclipse/features/${f}_*/feature.xml | tail -n +2 >> $files
+      sed -ne '/id=/s#.*"\(.*\)"#%{eclipse_base}/dropins/ptp/eclipse/plugins/\1_*.jar#gp' %{buildroot}%{eclipse_base}/dropins/ptp/eclipse/features/${f}_*/feature.xml | tail -n +2 >> files.$name
     done
-    sort -u -o $files $files
+    sort -u -o files.$name files.$name
   else
-    sed -ne '/id=/s#.*"\(.*\)"#%{eclipse_base}/dropins/ptp/eclipse/plugins/\1_*.jar#gp' %{buildroot}%{eclipse_base}/dropins/ptp/eclipse/features/$name/feature.xml | tail -n +2 > $files
+    sed -ne '/id=/s#.*"\(.*\)"#%{eclipse_base}/dropins/ptp/eclipse/plugins/\1_*.jar#gp' %{buildroot}%{eclipse_base}/dropins/ptp/eclipse/features/$name/feature.xml | tail -n +2 > files.$name
   fi
 done
 cp -u releng/org.eclipse.ptp.repo/target/repository/plugins/*.jar \
    %{buildroot}%{eclipse_base}/dropins/ptp/eclipse/plugins/
-# Remove external plugins
-rm %{buildroot}%{eclipse_base}/dropins/ptp/eclipse/plugins/org.eclipse.{photran,remote}*
+# Remove photran plugins
+rm %{buildroot}%{eclipse_base}/dropins/ptp/eclipse/plugins/org.eclipse.{photran,rephraserengine}*
 
 # Remove disabled modules from filelist
 sed -i -e '\,plugins/org.eclipse.ptp.remote.remotetools_,d' \
        -e '\,plugins/org.eclipse.ptp.remote_,d' \
        -e '\,plugins/org.eclipse.ptp.remotetools_,d' files.*
 
-sed -i -e '\,plugins/org.eclipse.ptp.core.source_,d' files.org.eclipse.ptp.sdk_*
-
 # Install sdm binary so debuginfo is created
 mkdir -p %{buildroot}%{_libdir}/ptp
 cp -p debug/org.eclipse.ptp.debug.sdm/bin/sdm %{buildroot}%{_libdir}/ptp/
 
-# crisb rpm 5 can't do multiple package lists
-cat files.org.eclipse.ptp.etfw.feedback.perfsuite_%{version} >> files.org.eclipse.ptp_%{version}
-cat files.org.eclipse.ptp.rdt.editor_%{version} >> files.org.eclipse.ptp.rdt_%{version}
+# cb - rpm5 doesnt handle multiple -f
+cat files.org.eclipse.ptp.rdt.editor_%{version}.%{ptp_build_id} >> files.org.eclipse.ptp.rdt_%{version}.%{ptp_build_id}
 
-%files -f files.org.eclipse.ptp_8.1.1
-%doc releng/org.eclipse.ptp-feature/epl-v10.html
+
+%files -f files.org.eclipse.ptp_%{version}.%{ptp_build_id}
+%doc releng/org.eclipse.ptp.license-feature/epl-v10.html
 %dir %{eclipse_base}/dropins/ptp
 %dir %{eclipse_base}/dropins/ptp/eclipse
 %dir %{eclipse_base}/dropins/ptp/eclipse/features
 %dir %{eclipse_base}/dropins/ptp/eclipse/plugins
-%{eclipse_base}/dropins/ptp/eclipse/features/org.eclipse.ptp.etfw.feedback.perfsuite_*
 
 %files master
-%doc releng/org.eclipse.ptp-feature/epl-v10.html
+%doc releng/org.eclipse.ptp.license-feature/epl-v10.html
 
-%files core-source -f files.org.eclipse.ptp.core.source_%{version}
-%doc releng/org.eclipse.ptp-feature/epl-v10.html
+%files core-source -f files.org.eclipse.ptp.core.source_%{version}.%{ptp_build_id}
+%doc releng/org.eclipse.ptp.license-feature/epl-v10.html
 %{eclipse_base}/dropins/ptp/eclipse/features/org.eclipse.ptp.core.source_*
 
-%files etfw-tau -f files.org.eclipse.ptp.etfw.tau_%{version}
-%doc releng/org.eclipse.ptp-feature/epl-v10.html
+%files etfw-tau -f files.org.eclipse.ptp.etfw.tau_%{version}.%{ptp_build_id}
+%doc releng/org.eclipse.ptp.license-feature/epl-v10.html
 %{eclipse_base}/dropins/ptp/eclipse/features/org.eclipse.ptp.etfw.tau_*
 
-%files etfw-tau-fortran -f files.org.eclipse.ptp.etfw.tau.fortran_%{version}
-%doc releng/org.eclipse.ptp-feature/epl-v10.html
+%files etfw-tau-fortran -f files.org.eclipse.ptp.etfw.tau.fortran_%{version}.%{ptp_build_id}
+%doc releng/org.eclipse.ptp.license-feature/epl-v10.html
 %{eclipse_base}/dropins/ptp/eclipse/features/org.eclipse.ptp.etfw.tau.fortran_*
 
 %files fortran
-%doc releng/org.eclipse.ptp-feature/epl-v10.html
+%doc releng/org.eclipse.ptp.license-feature/epl-v10.html
 %{eclipse_base}/dropins/ptp/eclipse/features/org.eclipse.ptp.fortran_*
 
-%files gem -f files.org.eclipse.ptp.gem_%{version}
-%doc releng/org.eclipse.ptp-feature/epl-v10.html
+%files gem -f files.org.eclipse.ptp.gem_%{version}.%{ptp_build_id}
+%doc releng/org.eclipse.ptp.license-feature/epl-v10.html
 %{eclipse_base}/dropins/ptp/eclipse/features/org.eclipse.ptp.gem_*
 
 # GIG was disabled for 7.0 release for now
 %if 0
-%files gig -f files.org.eclipse.ptp.gig_%{version}
-%doc releng/org.eclipse.ptp-feature/epl-v10.html
+%files gig -f files.org.eclipse.ptp.gig_%{version}.%{ptp_build_id}
+%doc releng/org.eclipse.ptp.license-feature/epl-v10.html
 %{eclipse_base}/dropins/ptp/eclipse/features/org.eclipse.ptp.gig_*
 %endif
 
-%files pldt-fortran -f files.org.eclipse.ptp.pldt.fortran_%{version}
-%doc releng/org.eclipse.ptp-feature/epl-v10.html
+%files pldt-fortran -f files.org.eclipse.ptp.pldt.fortran_%{version}.%{ptp_build_id}
+%doc releng/org.eclipse.ptp.license-feature/epl-v10.html
 %{eclipse_base}/dropins/ptp/eclipse/features/org.eclipse.ptp.pldt.fortran_*
 
-%files pldt-upc -f files.org.eclipse.ptp.pldt.upc_%{version}
-%doc releng/org.eclipse.ptp-feature/epl-v10.html
+%files pldt-upc -f files.org.eclipse.ptp.pldt.upc_%{version}.%{ptp_build_id}
+%doc releng/org.eclipse.ptp.license-feature/epl-v10.html
 %{eclipse_base}/dropins/ptp/eclipse/features/org.eclipse.ptp.pldt.upc_*
 
-%files rdt -f files.org.eclipse.ptp.rdt_%{version}
-%doc releng/org.eclipse.ptp-feature/epl-v10.html
+%files rdt -f files.org.eclipse.ptp.rdt_%{version}.%{ptp_build_id}
+%doc releng/org.eclipse.ptp.license-feature/epl-v10.html
 %{eclipse_base}/dropins/ptp/eclipse/features/org.eclipse.ptp.rdt_*
 %{eclipse_base}/dropins/ptp/eclipse/features/org.eclipse.ptp.rdt.editor_*
 
-%files rdt-sync-fortran -f files.org.eclipse.ptp.rdt.sync.fortran_%{version}
-%doc releng/org.eclipse.ptp-feature/epl-v10.html
+%files rdt-sync-fortran -f files.org.eclipse.ptp.rdt.sync.fortran_%{version}.%{ptp_build_id}
+%doc releng/org.eclipse.ptp.license-feature/epl-v10.html
 %{eclipse_base}/dropins/ptp/eclipse/features/org.eclipse.ptp.rdt.sync.fortran_*
 
-%files rdt-xlc -f files.org.eclipse.ptp.rdt.xlc_%{version}
-%doc releng/org.eclipse.ptp-feature/epl-v10.html
+%files rdt-xlc -f files.org.eclipse.ptp.rdt.xlc_%{version}.%{ptp_build_id}
+%doc releng/org.eclipse.ptp.license-feature/epl-v10.html
 %{eclipse_base}/dropins/ptp/eclipse/features/org.eclipse.ptp.rdt.xlc_*
 
-%files remote-rse -f files.org.eclipse.ptp.remote.rse_%{version}
-%doc releng/org.eclipse.ptp-feature/epl-v10.html
+%files remote-rse -f files.org.eclipse.ptp.remote.rse_%{version}.%{ptp_build_id}
+%doc releng/org.eclipse.ptp.license-feature/epl-v10.html
 %{eclipse_base}/dropins/ptp/eclipse/features/org.eclipse.ptp.remote.rse_*
 
-%files rm-contrib -f files.org.eclipse.ptp.rm.jaxb.contrib_%{version}
-%doc releng/org.eclipse.ptp-feature/epl-v10.html
+%files rm-contrib -f files.org.eclipse.ptp.rm.jaxb.contrib_%{version}.%{ptp_build_id}
+%doc releng/org.eclipse.ptp.license-feature/epl-v10.html
 %{eclipse_base}/dropins/ptp/eclipse/features/org.eclipse.ptp.rm.jaxb.contrib_*
 
-%files sci -f files.org.eclipse.ptp.sci_%{version}
-%doc releng/org.eclipse.ptp-feature/epl-v10.html
+%files sci -f files.org.eclipse.ptp.sci_%{version}.%{ptp_build_id}
+%doc releng/org.eclipse.ptp.license-feature/epl-v10.html
 %{eclipse_base}/dropins/ptp/eclipse/features/org.eclipse.ptp.sci_*
 
-%files sdk -f files.org.eclipse.ptp.sdk_%{version}
-%doc releng/org.eclipse.ptp-feature/epl-v10.html
+%files sdk -f files.org.eclipse.ptp.sdk_%{version}.%{ptp_build_id}
+%doc releng/org.eclipse.ptp.license-feature/epl-v10.html
 %{eclipse_base}/dropins/ptp/eclipse/features/org.eclipse.ptp.sdk_*
 
-%files sdm -f files.org.eclipse.ptp.debug.sdm_%{version}
-%doc releng/org.eclipse.ptp-feature/epl-v10.html
+%files sdm -f files.org.eclipse.ptp.debug.sdm_%{version}.%{ptp_build_id}
+%doc releng/org.eclipse.ptp.license-feature/epl-v10.html
 %{eclipse_base}/dropins/ptp/eclipse/features/org.eclipse.ptp.debug.sdm_*
 %{_libdir}/ptp/
 
 
 %changelog
-* Wed Mar 25 2015 Orion Poplawski <orion@cora.nwra.com> 8.1.1-2
-- Update upstream source to fix compilation against CDT
-- Use upstream patch for jgit 3.7.0 compatibility
-- Remove unavailable components from repository build
-
-* Mon Mar 9 2015 Orion Poplawski <orion@cora.nwra.com> 8.1.1-1
-- Update to 8.1.1
-
-* Thu Jan 15 2015 Alexander Kurtakov <akurtako@redhat.com> 8.1.0-3
-- Adapt to egit changes.
-
-* Tue Dec 9 2014 Alexander Kurtakov <akurtako@redhat.com> 8.1.0-2
-- Fix build.
-
-* Wed Oct 15 2014 Orion Poplawski <orion@cora.nwra.com> 8.1.0-1
-- Update to 8.1.0
-
-* Wed Aug 20 2014 Orion Poplawski <orion@cora.nwra.com> 8.0.1-1
-- Update to 8.0.1
-
-* Tue Aug 19 2014 Mat Booth <mat.booth@redhat.com> - 8.0.0-2
-- Reinstate forceContextQualifier
-
-* Tue Aug 19 2014 Mat Booth <mat.booth@redhat.com> - 8.0.0-1
-- Update to latest upstream release
-- Fix FTBFS rhbz #1106199
-
-* Sat Aug 16 2014 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 7.0.4-3
-- Rebuilt for https://fedoraproject.org/wiki/Fedora_21_22_Mass_Rebuild
-
-* Sat Jun 07 2014 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 7.0.4-2
-- Rebuilt for https://fedoraproject.org/wiki/Fedora_21_Mass_Rebuild
-
 * Tue Apr 8 2014 Orion Poplawski <orion@cora.nwra.com> 7.0.4-1
 - Update to 7.0.4
 

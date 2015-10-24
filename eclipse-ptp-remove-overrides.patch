@@ -1,0 +1,151 @@
+diff -up eclipse-ptp-6.0.1/core/org.eclipse.ptp.remote.core/src/org/eclipse/ptp/remote/internal/core/LocalResource.java.overrides eclipse-ptp-6.0.1/core/org.eclipse.ptp.remote.core/src/org/eclipse/ptp/remote/internal/core/LocalResource.java
+--- eclipse-ptp-6.0.1/core/org.eclipse.ptp.remote.core/src/org/eclipse/ptp/remote/internal/core/LocalResource.java.overrides	2012-06-29 14:19:36.000000000 -0600
++++ eclipse-ptp-6.0.1/core/org.eclipse.ptp.remote.core/src/org/eclipse/ptp/remote/internal/core/LocalResource.java	2012-07-05 12:23:10.900093847 -0600
+@@ -29,7 +29,6 @@ public class LocalResource implements IR
+ 	 * 
+ 	 * @see org.eclipse.ptp.remote.core.IRemoteResource#getDefaultLocationURI(org.eclipse.core.resources.IResource)
+ 	 */
+-	@Override
+ 	public URI getActiveLocationURI() {
+ 		return fResource.getLocationURI();
+ 	}
+@@ -39,7 +38,6 @@ public class LocalResource implements IR
+ 	 * 
+ 	 * @see org.eclipse.ptp.remote.core.IRemoteResource#getResource()
+ 	 */
+-	@Override
+ 	public IResource getResource() {
+ 		return fResource;
+ 	}
+@@ -49,7 +47,6 @@ public class LocalResource implements IR
+ 	 * 
+ 	 * @see org.eclipse.ptp.remote.core.IRemoteResource#refresh(org.eclipse.core.runtime.IProgressMonitor)
+ 	 */
+-	@Override
+ 	public void refresh(IProgressMonitor monitor) throws CoreException {
+ 		fResource.refreshLocal(IResource.DEPTH_INFINITE, monitor);
+ 	}
+@@ -59,7 +56,6 @@ public class LocalResource implements IR
+ 	 * 
+ 	 * @see org.eclipse.ptp.remote.core.IRemoteResource#setResource(org.eclipse.core.resources.IResource)
+ 	 */
+-	@Override
+ 	public void setResource(IResource resource) {
+ 		fResource = resource;
+ 	}
+diff -up eclipse-ptp-6.0.1/org.eclipse.photran.cdtinterface/src/org/eclipse/photran/internal/cdtinterface/errorparsers/CrayErrorParser.java.overrides eclipse-ptp-6.0.1/org.eclipse.photran.cdtinterface/src/org/eclipse/photran/internal/cdtinterface/errorparsers/CrayErrorParser.java
+--- eclipse-ptp-6.0.1/org.eclipse.photran.cdtinterface/src/org/eclipse/photran/internal/cdtinterface/errorparsers/CrayErrorParser.java.overrides	2012-06-29 08:36:26.000000000 -0600
++++ eclipse-ptp-6.0.1/org.eclipse.photran.cdtinterface/src/org/eclipse/photran/internal/cdtinterface/errorparsers/CrayErrorParser.java	2012-07-05 12:23:55.731516420 -0600
+@@ -58,7 +58,6 @@ public class CrayErrorParser implements
+ 
+ 	private String previousLine = ""; //$NON-NLS-1$
+ 
+-	@Override
+ 	public boolean processLine(String currentLine, ErrorParserManager eoParser) {
+ 		final Matcher matcher = matchErrorWarningLine(previousLine); // eoParser.getPreviousLine() is broken?
+ 		previousLine = currentLine;
+diff -up eclipse-ptp-6.0.1/org.eclipse.photran.cdtinterface/src/org/eclipse/photran/internal/cdtinterface/errorparsers/Open64ErrorParser.java.overrides eclipse-ptp-6.0.1/org.eclipse.photran.cdtinterface/src/org/eclipse/photran/internal/cdtinterface/errorparsers/Open64ErrorParser.java
+--- eclipse-ptp-6.0.1/org.eclipse.photran.cdtinterface/src/org/eclipse/photran/internal/cdtinterface/errorparsers/Open64ErrorParser.java.overrides	2012-06-29 08:36:26.000000000 -0600
++++ eclipse-ptp-6.0.1/org.eclipse.photran.cdtinterface/src/org/eclipse/photran/internal/cdtinterface/errorparsers/Open64ErrorParser.java	2012-07-05 12:23:34.323269579 -0600
+@@ -57,7 +57,6 @@ public class Open64ErrorParser implement
+ 
+     private String previousLine = ""; //$NON-NLS-1$
+ 
+-    @Override
+     public boolean processLine(String currentLine, ErrorParserManager eoParser)
+     {
+         Matcher matcher = matchErrorWarningLine(previousLine); // eoParser.getPreviousLine() is broken?
+diff -up eclipse-ptp-6.0.1/org.eclipse.photran.core.vpg.preprocessor.c/src/org/eclipse/photran/internal/core/preprocessor/c/ASTPreprocessorName.java.overrides eclipse-ptp-6.0.1/org.eclipse.photran.core.vpg.preprocessor.c/src/org/eclipse/photran/internal/core/preprocessor/c/ASTPreprocessorName.java
+--- eclipse-ptp-6.0.1/org.eclipse.photran.core.vpg.preprocessor.c/src/org/eclipse/photran/internal/core/preprocessor/c/ASTPreprocessorName.java.overrides	2012-06-29 08:36:26.000000000 -0600
++++ eclipse-ptp-6.0.1/org.eclipse.photran.core.vpg.preprocessor.c/src/org/eclipse/photran/internal/core/preprocessor/c/ASTPreprocessorName.java	2012-07-05 12:23:10.897093952 -0600
+@@ -135,7 +135,6 @@ class ASTPreprocessorName extends ASTPre
+     /* (non-Javadoc)
+      * @see org.eclipse.cdt.core.dom.ast.IASTNode#getOriginalNode()
+      */
+-    @Override
+     public IASTNode getOriginalNode()
+     {
+         // TODO Auto-generated method stub
+diff -up eclipse-ptp-6.0.1/org.eclipse.photran.core.vpg.preprocessor.c/src/org/eclipse/photran/internal/core/preprocessor/c/ASTPreprocessorNode.java.overrides eclipse-ptp-6.0.1/org.eclipse.photran.core.vpg.preprocessor.c/src/org/eclipse/photran/internal/core/preprocessor/c/ASTPreprocessorNode.java
+--- eclipse-ptp-6.0.1/org.eclipse.photran.core.vpg.preprocessor.c/src/org/eclipse/photran/internal/core/preprocessor/c/ASTPreprocessorNode.java.overrides	2012-06-29 08:36:26.000000000 -0600
++++ eclipse-ptp-6.0.1/org.eclipse.photran.core.vpg.preprocessor.c/src/org/eclipse/photran/internal/core/preprocessor/c/ASTPreprocessorNode.java	2012-07-05 12:23:10.898093917 -0600
+@@ -330,7 +330,6 @@ class ASTInclusionStatement extends ASTP
+     /* (non-Javadoc)
+      * @see org.eclipse.cdt.core.dom.ast.IASTNode#getOriginalNode()
+      */
+-    @Override
+     public IASTNode getOriginalNode()
+     {
+         // TODO Auto-generated method stub
+@@ -711,7 +710,6 @@ class ASTMacroExpansion extends ASTPrepr
+     /* (non-Javadoc)
+      * @see org.eclipse.cdt.core.dom.ast.IASTNode#getOriginalNode()
+      */
+-    @Override
+     public IASTNode getOriginalNode()
+     {
+         // TODO Auto-generated method stub
+diff -up eclipse-ptp-6.0.1/org.eclipse.photran.ui/src/org/eclipse/photran/internal/ui/editor/FortranEditor.java.overrides eclipse-ptp-6.0.1/org.eclipse.photran.ui/src/org/eclipse/photran/internal/ui/editor/FortranEditor.java
+--- eclipse-ptp-6.0.1/org.eclipse.photran.ui/src/org/eclipse/photran/internal/ui/editor/FortranEditor.java.overrides	2012-06-29 08:36:26.000000000 -0600
++++ eclipse-ptp-6.0.1/org.eclipse.photran.ui/src/org/eclipse/photran/internal/ui/editor/FortranEditor.java	2012-07-05 12:23:10.899093882 -0600
+@@ -600,9 +600,9 @@ public class FortranEditor extends CDTBa
+ 
+         private static class EntirePartitionDamager implements IPresentationDamager
+         {
+-            @Override public void setDocument(IDocument document) { }
++            public void setDocument(IDocument document) { }
+ 
+-            @Override public IRegion getDamageRegion(ITypedRegion partition, DocumentEvent event, boolean documentPartitioningChanged)
++            public IRegion getDamageRegion(ITypedRegion partition, DocumentEvent event, boolean documentPartitioningChanged)
+             {
+                 return partition;
+             }
+diff -up eclipse-ptp-6.0.1/org.eclipse.photran.ui/src/org/eclipse/photran/internal/ui/editor/FortranStmtPartitionScanner.java.overrides eclipse-ptp-6.0.1/org.eclipse.photran.ui/src/org/eclipse/photran/internal/ui/editor/FortranStmtPartitionScanner.java
+--- eclipse-ptp-6.0.1/org.eclipse.photran.ui/src/org/eclipse/photran/internal/ui/editor/FortranStmtPartitionScanner.java.overrides	2012-06-29 08:36:26.000000000 -0600
++++ eclipse-ptp-6.0.1/org.eclipse.photran.ui/src/org/eclipse/photran/internal/ui/editor/FortranStmtPartitionScanner.java	2012-07-05 12:23:10.899093882 -0600
+@@ -70,7 +70,6 @@ public class FortranStmtPartitionScanner
+         this.editor = editor;
+     }
+ 
+-    @Override
+     public void setRange(IDocument document, int offset, int length)
+     {
+         this.document = document;
+@@ -78,7 +77,6 @@ public class FortranStmtPartitionScanner
+         this.endOffset = offset + length;
+     }
+ 
+-    @Override
+     public void setPartialRange(IDocument document, int offset, int length, String contentType,
+         int partitionOffset)
+     {
+@@ -96,7 +94,6 @@ public class FortranStmtPartitionScanner
+ 
+     }
+ 
+-    @Override
+     public IToken nextToken()
+     {
+         this.tokenOffset = startOffset;
+@@ -158,13 +155,11 @@ public class FortranStmtPartitionScanner
+         }
+     }
+ 
+-    @Override
+     public int getTokenOffset()
+     {
+         return tokenOffset;
+     }
+ 
+-    @Override
+     public int getTokenLength()
+     {
+         return tokenLength;
+diff -up eclipse-ptp-6.0.1/rms/org.eclipse.ptp.rm.jaxb.doc.isv/build.properties.overrides eclipse-ptp-6.0.1/rms/org.eclipse.ptp.rm.jaxb.doc.isv/build.properties
+--- eclipse-ptp-6.0.1/rms/org.eclipse.ptp.rm.jaxb.doc.isv/build.properties.overrides	2012-06-29 14:19:36.000000000 -0600
++++ eclipse-ptp-6.0.1/rms/org.eclipse.ptp.rm.jaxb.doc.isv/build.properties	2012-07-05 12:23:10.900093847 -0600
+@@ -1,4 +1,3 @@
+-source.. = src/
+ output.. = bin/
+ bin.includes = META-INF/,\
+                .,\
