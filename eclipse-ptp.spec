@@ -417,8 +417,11 @@ sed -i -e '\,plugins/org.eclipse.ptp.core.source_,d' files.org.eclipse.ptp.sdk_*
 mkdir -p %{buildroot}%{_libdir}/ptp
 cp -p debug/org.eclipse.ptp.debug.sdm/bin/sdm %{buildroot}%{_libdir}/ptp/
 
+# crisb rpm 5 can't do multiple package lists
+cat files.org.eclipse.ptp.etfw.feedback.perfsuite_%{version} >> files.org.eclipse.ptp_%{version}
+cat files.org.eclipse.ptp.rdt.editor_%{version} >> files.org.eclipse.ptp.rdt_%{version}
 
-%files -f files.org.eclipse.ptp_%{version} -f files.org.eclipse.ptp.etfw.feedback.perfsuite_%{version}
+%files -f files.org.eclipse.ptp_8.1.1
 %doc releng/org.eclipse.ptp-feature/epl-v10.html
 %dir %{eclipse_base}/dropins/ptp
 %dir %{eclipse_base}/dropins/ptp/eclipse
@@ -464,7 +467,7 @@ cp -p debug/org.eclipse.ptp.debug.sdm/bin/sdm %{buildroot}%{_libdir}/ptp/
 %doc releng/org.eclipse.ptp-feature/epl-v10.html
 %{eclipse_base}/dropins/ptp/eclipse/features/org.eclipse.ptp.pldt.upc_*
 
-%files rdt -f files.org.eclipse.ptp.rdt_%{version} -f files.org.eclipse.ptp.rdt.editor_%{version}
+%files rdt -f files.org.eclipse.ptp.rdt_%{version}
 %doc releng/org.eclipse.ptp-feature/epl-v10.html
 %{eclipse_base}/dropins/ptp/eclipse/features/org.eclipse.ptp.rdt_*
 %{eclipse_base}/dropins/ptp/eclipse/features/org.eclipse.ptp.rdt.editor_*
