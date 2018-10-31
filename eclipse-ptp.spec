@@ -24,7 +24,7 @@
 Summary:        Eclipse Parallel Tools Platform
 Name:           eclipse-ptp
 Version:        8.1.1
-Release:        2.1
+Release:        2.2
 License:        EPL
 Group:          Development/Java
 URL:            http://www.eclipse.org/ptp
