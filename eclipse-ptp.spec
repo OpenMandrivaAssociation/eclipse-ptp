@@ -27,7 +27,7 @@ Version:        8.1.1
 Release:        2.2
 License:        EPL
 Group:          Development/Java
-URL:            http://www.eclipse.org/ptp
+URL:            https://www.eclipse.org/ptp
 
 # The following tarballs were downloaded from the git repositories
 Source0:        http://git.eclipse.org/c/ptp/org.eclipse.ptp.git/snapshot/org.eclipse.ptp-%{ptp_git_tag}.tar.bz2
